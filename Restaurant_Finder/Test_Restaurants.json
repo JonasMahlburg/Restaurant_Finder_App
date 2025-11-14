@@ -1,0 +1,74 @@
+[
+  {
+    "name": "The Wild West Grill",
+    "location": "Austin, Texas",
+    "image": "wildwestgrill.jpg",
+    "childfriendly": true,
+    "style": "Rustikal",
+    "art": "Steakhouse",
+    "price": "$$"
+  },
+  {
+    "name": "La Dolce Vita",
+    "location": "Rom, Italien",
+    "image": "ladolcevita.jpg",
+    "childfriendly": true,
+    "style": "Elegant",
+    "art": "Italienisch",
+    "price": "$$$"
+  },
+  {
+    "name": "Tokyo Street Bites",
+    "location": "Berlin, Deutschland",
+    "image": "tokyostreetbites.jpg",
+    "childfriendly": false,
+    "style": "Modern",
+    "art": "Asiatisch",
+    "price": "$$"
+  },
+  {
+    "name": "Mama’s Kitchen",
+    "location": "Nashville, Tennessee",
+    "image": "mamaskitchen.jpg",
+    "childfriendly": true,
+    "style": "Familiär",
+    "art": "Amerikanisch",
+    "price": "$"
+  },
+  {
+    "name": "El Toro Loco",
+    "location": "Madrid, Spanien",
+    "image": "eltoroloco.jpg",
+    "childfriendly": false,
+    "style": "Traditionell",
+    "art": "Mexikanisch",
+    "price": "$$"
+  },
+  {
+    "name": "Sakura Garden",
+    "location": "Kyoto, Japan",
+    "image": "sakuragarden.jpg",
+    "childfriendly": true,
+    "style": "Minimalistisch",
+    "art": "Japanisch",
+    "price": "$$$"
+  },
+  {
+    "name": "Burger Barn",
+    "location": "Denver, Colorado",
+    "image": "burgerbarn.jpg",
+    "childfriendly": true,
+    "style": "Casual",
+    "art": "Fast Food",
+    "price": "$"
+  },
+  {
+    "name": "Le Petit Paris",
+    "location": "Paris, Frankreich",
+    "image": "lepetitparis.jpg",
+    "childfriendly": false,
+    "style": "Romantisch",
+    "art": "Französisch",
+    "price": "$$$"
+  }
+]
