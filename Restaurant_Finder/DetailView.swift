@@ -5,8 +5,8 @@
 //  Created by Jonas Mahlburg on 13.11.25.
 //
 
+import SwiftData
 import SwiftUI
-
 
 struct DetailView: View {
     var restaurant: Restaurant
@@ -14,14 +14,13 @@ struct DetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                // Restaurantbild
                 Image(restaurant.image)
                     .resizable()
                     .scaledToFit()
                     .cornerRadius(12)
                     .shadow(radius: 4)
                 
-                // Titel + Ort
+           
                 VStack(alignment: .leading, spacing: 4) {
                     Text(restaurant.name)
                         .font(.title)
@@ -34,16 +33,20 @@ struct DetailView: View {
 
                 Divider()
                 
-                // Zusatzinfos
                 VStack(alignment: .leading, spacing: 8) {
                     Label("Stil: \(restaurant.style)", systemImage: "paintpalette")
-                    Label("Art: \(restaurant.art)", systemImage: "fork.knife")
+                    Label("Art: \(restaurant.kind)", systemImage: "fork.knife")
                     Label("Preisklasse: \(restaurant.price)", systemImage: "dollarsign.circle")
+                    Label("Öffnungszeiten: \(restaurant.hours)", systemImage: "clock")
                     
                     if let childfriendly = restaurant.childfriendly {
                         Label(childfriendly ? "Kinderfreundlich" : "Nicht kinderfreundlich",
                               systemImage: childfriendly ? "figure.and.child.holdinghands" : "nosign")
                     }
+                    Label("\(restaurant.review)", systemImage: "note.text")
+                        .clipShape(.capsule)
+                        .background(.yellow)
+                        .foregroundStyle(.primary)
                 }
                 .font(.body)
             }

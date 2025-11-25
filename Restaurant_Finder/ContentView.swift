@@ -5,13 +5,17 @@
 //  Created by Jonas Mahlburg on 11.11.25.
 //
 
+import SwiftData
 import SwiftUI
 
 struct ContentView: View {
     
+    @Environment(\.modelContext) var modelContext
+    @Query(sort: \Restaurant.name) private var recentRestaurants: [Restaurant]
+    
     @State private var restaurant: Restaurant? = nil
     @State private var searchText: String = ""
-  
+    
     
     var body: some View {
         NavigationStack{
@@ -19,24 +23,22 @@ struct ContentView: View {
                 NavigationLink("Create New Restaurant"){
                     NewRestaurantView()
                 }
-            VStack{
-                Image("restaurant")
-                    .resizable()
-                    .scaledToFit()
-                
-                Form{
-                    TextField("Search for a restaurant", text: $searchText)
-
+                VStack{
+                    Image("restaurant")
+                        .resizable()
+                        .scaledToFit()
+                    
                 }
-                Button("Search"){
-                    print(searchText)
-                }
-
+                VStack{
+                    Text("Recent Searches:")
+                    NavigationLink("Explore"){
+                        OverViewView()
+                    }
                 }
             }
             .navigationTitle("Restaurant Finder")
-            .padding()
         }
+        .padding()
     }
 }
 
