@@ -9,7 +9,9 @@ import SwiftData
 import SwiftUI
 
 struct DetailView: View {
-    var restaurant: Restaurant
+    @Environment(\.modelContext) var modelContext
+    
+    let restaurant: Restaurant
 
     var body: some View {
         ScrollView {
@@ -34,7 +36,7 @@ struct DetailView: View {
                 Divider()
                 
                 VStack(alignment: .leading, spacing: 8) {
-                    Label("Stil: \(restaurant.style)", systemImage: "paintpalette")
+                    Label("Stil: \(restaurant.type)", systemImage: "paintpalette")
                     Label("Art: \(restaurant.kind)", systemImage: "fork.knife")
                     Label("Preisklasse: \(restaurant.price)", systemImage: "dollarsign.circle")
                     Label("Öffnungszeiten: \(restaurant.hours)", systemImage: "clock")
@@ -57,31 +59,19 @@ struct DetailView: View {
     }
 }
 
-func loadRestaurants() -> [Restaurant] {
-    guard let url = Bundle.main.url(forResource: "Test_Restaurants", withExtension: "json") else {
-        print("FEHLER: Datei-URL nicht gefunden. Prüfen Sie Dateiname und Target Membership.")
-        return []
-    }
-
-    guard let data = try? Data(contentsOf: url) else {
-        print("FEHLER: Daten konnten nicht von der URL geladen werden.")
-        return []
-    }
-
-    do {
-        let restaurants = try JSONDecoder().decode([Restaurant].self, from: data)
-        return restaurants
-    } catch {
-        print("FEHLER: JSON-Dekodierung fehlgeschlagen: \(error)")
-        return []
-    }
-}
-
 #Preview {
-    let restaurants = loadRestaurants()
-    if let first = restaurants.first {
-        DetailView(restaurant: first)
-    } else {
-        Text("Keine Testdaten gefunden.")
+    do {
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: Restaurant.self, configurations: config)
+        let example = Restaurant(name: "Habanero Mexicano", location: "Mexico City", image: "mexico", childfriendly: true, type: "Mexican", kind: "Restauramt", price: "$$", hours: "16:00 - 23:00", phone: "555 345927", review: "increíblemente bueno")
+        
+        return AnyView(
+        DetailView(restaurant: example)
+            .modelContainer(container)
+        )
+    } catch {
+        return AnyView(
+        Text("Failed to create preview: \(error.localizedDescription)")
+        )
     }
 }

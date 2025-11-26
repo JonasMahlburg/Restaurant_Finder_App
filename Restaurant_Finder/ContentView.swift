@@ -11,10 +11,10 @@ import SwiftUI
 struct ContentView: View {
     
     @Environment(\.modelContext) var modelContext
-    @Query(sort: \Restaurant.name) private var recentRestaurants: [Restaurant]
-    
-    @State private var restaurant: Restaurant? = nil
-    @State private var searchText: String = ""
+    @Query(sort:
+            [SortDescriptor(\Restaurant.name)
+            ])
+    var restaurant: [Restaurant]
     
     
     var body: some View {
@@ -23,23 +23,43 @@ struct ContentView: View {
                 NavigationLink("Create New Restaurant"){
                     NewRestaurantView()
                 }
-                VStack{
-                    Image("restaurant")
+                Image("restaurant")
                         .resizable()
                         .scaledToFit()
-                    
-                }
-                VStack{
-                    Text("Recent Searches:")
-                    NavigationLink("Explore"){
-                        OverViewView()
+                
+                    if restaurant.isEmpty{
+                        Text("Add your first restaurant!")
+                            .font(.subheadline)
+                            .fontWeight(.bold)
+                        Image(systemName:"photo")
+                            .resizable()
+                            .scaledToFit()
+                            .opacity(0.2)
+                            .frame(width: 100, height: 100)
+                    }else{
+                        List{
+                            ForEach(restaurant){ restaurant in
+                                NavigationLink(value: restaurant){
+                                    HStack{
+                                        Image(restaurant.image)
+                                            .resizable()
+                                            .scaledToFit()
+                                        Text(restaurant.name)
+                                    }
+                                }
+                            }
+                        }
+
+                        }
                     }
-                }
+            NavigationLink("Explore"){
+                OverView()
             }
             .navigationTitle("Restaurant Finder")
         }
         .padding()
     }
+
 }
 
 #Preview {
