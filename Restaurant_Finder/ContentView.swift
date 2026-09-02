@@ -7,11 +7,11 @@
 
 import MapKit
 import SwiftUI
-import WishKit
 
 struct ContentView: View {
     @ObservedObject var viewModel: RestaurantSearchViewModel
     @State private var selectedRestaurant: MKMapItem?
+    @State private var showingFeedback = false
     
     
     var body: some View {
@@ -46,17 +46,29 @@ struct ContentView: View {
             }
             .mapItemDetailSheet(item: $selectedRestaurant)
             .searchable(text: $viewModel.searchText, prompt: "Restaurant suchen")
+            .navigationTitle("In deiner Nähe")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button {
-                        WishKit.show()
+                        showingFeedback = true
                     } label: {
-                        Image(systemName: "lightbulb")
+                        Label("Feedback", systemImage: "lightbulb")
                     }
                 }
             }
+            .sheet(isPresented: $showingFeedback) {
+                NavigationStack {
+                    FeedbackView()
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("Fertig") {
+                                    showingFeedback = false
+                                }
+                            }
+                        }
+                }
+            }
         }
-        .navigationTitle("In deiner Nähe")
     }
     
     // Übersetzt die POI-Kategorie in lesbare Namen

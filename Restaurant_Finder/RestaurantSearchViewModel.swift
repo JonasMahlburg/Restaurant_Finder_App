@@ -46,13 +46,22 @@ final class RestaurantSearchViewModel: NSObject, ObservableObject {
     }
     
     private func filterRestaurants(with searchText: String) {
+        let filtered: [MKMapItem]
+        
         if searchText.isEmpty {
-            restaurants = allRestaurants
+            filtered = allRestaurants
         } else {
-            restaurants = allRestaurants.filter { mapItem in
+            filtered = allRestaurants.filter { mapItem in
                 guard let name = mapItem.name else { return false }
                 return name.localizedCaseInsensitiveContains(searchText)
             }
+        }
+        
+        // Sortiere nach Entfernung (nächste zuerst)
+        restaurants = filtered.sorted { item1, item2 in
+            let distance1 = distance(to: item1) ?? Double.infinity
+            let distance2 = distance(to: item2) ?? Double.infinity
+            return distance1 < distance2
         }
     }
 
