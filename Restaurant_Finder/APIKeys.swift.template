@@ -1,0 +1,19 @@
+//
+//  APIKeys.swift.template
+//  Restaurant_Finder
+//
+//  ANLEITUNG FÜR ENTWICKLER:
+//  1. Kopiere diese Datei und benenne sie in "APIKeys.swift" um
+//  2. Ersetze die Platzhalter mit deinen echten API-Keys
+//  3. APIKeys.swift wird von Git ignoriert und bleibt lokal
+//
+
+import Foundation
+
+enum APIKeys {
+    // Erhalte deine WishKit ID von https://wishkit.io
+    static let wishKit = "YOUR_WISHKIT_ID_HERE"
+    
+    // Füge hier weitere API-Keys hinzu, wenn nötig
+    // static let anotherAPI = "YOUR_API_KEY_HERE"
+}

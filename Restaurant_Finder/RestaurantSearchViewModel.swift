@@ -1,0 +1,195 @@
+import Foundation
+import MapKit
+import CoreLocation
+import SwiftUI
+internal import Combine
+
+@MainActor
+final class RestaurantSearchViewModel: NSObject, ObservableObject {
+    @Published var restaurants: [MKMapItem] = []
+    @Published var authorizationStatus: CLAuthorizationStatus = .notDetermined
+    @Published var isSearching = false
+    @Published var errorMessage: String?
+    @Published var searchText = ""
+    @Published var userLocation: CLLocation?
+
+    private let locationManager = CLLocationManager()
+    private var allRestaurants: [MKMapItem] = []
+    
+    // Alle gastronomischen Kategorien
+    private let foodCategories = [
+        "Restaurant",
+        "Bar",
+        "Pub",
+        "Café",
+        "Bistro",
+        "Pizzeria",
+        "Sushi",
+        "Burger",
+        "Fast Food",
+        "Imbiss"
+    ]
+
+    override init() {
+        super.init()
+        locationManager.delegate = self
+        setupSearchTextObserver()
+    }
+    
+    private func setupSearchTextObserver() {
+        // Reagiere auf Änderungen im Suchtext
+        Task { @MainActor in
+            for await searchText in $searchText.values {
+                filterRestaurants(with: searchText)
+            }
+        }
+    }
+    
+    private func filterRestaurants(with searchText: String) {
+        if searchText.isEmpty {
+            restaurants = allRestaurants
+        } else {
+            restaurants = allRestaurants.filter { mapItem in
+                guard let name = mapItem.name else { return false }
+                return name.localizedCaseInsensitiveContains(searchText)
+            }
+        }
+    }
+
+    func requestAuthorization() {
+        locationManager.requestWhenInUseAuthorization()
+    }
+
+    func startSearchNearbyRestaurants() {
+        guard authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways else {
+            requestAuthorization()
+            return
+        }
+        if let location = locationManager.location {
+            searchRestaurants(near: location.coordinate)
+        } else {
+            locationManager.startUpdatingLocation()
+        }
+    }
+
+    private func searchRestaurants(near coordinate: CLLocationCoordinate2D) {
+        isSearching = true
+        errorMessage = nil
+        
+        let userLocation = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+        self.userLocation = userLocation
+        let maxDistance: CLLocationDistance = 10_000 // 10km in Metern
+        
+        // Suche nach allen gastronomischen Kategorien
+        Task {
+            var allResults: [MKMapItem] = []
+            
+            // Führe Suchen für alle Kategorien parallel aus
+            await withTaskGroup(of: [MKMapItem].self) { group in
+                for category in foodCategories {
+                    group.addTask {
+                        await self.searchCategory(category, near: coordinate, userLocation: userLocation, maxDistance: maxDistance)
+                    }
+                }
+                
+                // Sammle alle Ergebnisse
+                for await results in group {
+                    allResults.append(contentsOf: results)
+                }
+            }
+            
+            // Entferne Duplikate basierend auf Name und Koordinaten
+            let uniqueResults = removeDuplicates(from: allResults)
+            
+            self.allRestaurants = uniqueResults
+            self.filterRestaurants(with: self.searchText)
+            self.isSearching = false
+        }
+    }
+    
+    private func searchCategory(_ category: String, near coordinate: CLLocationCoordinate2D, userLocation: CLLocation, maxDistance: CLLocationDistance) async -> [MKMapItem] {
+        let request = MKLocalSearch.Request()
+        request.naturalLanguageQuery = category
+        request.resultTypes = .pointOfInterest
+        request.region = MKCoordinateRegion(
+            center: coordinate,
+            span: MKCoordinateSpan(latitudeDelta: 0.15, longitudeDelta: 0.15)
+        )
+        
+        let search = MKLocalSearch(request: request)
+        
+        do {
+            let response = try await search.start()
+            // Filtere nach Entfernung
+            return response.mapItems.filter { mapItem in
+                guard let itemLocation = mapItem.placemark.location else {
+                    return false
+                }
+                let distance = userLocation.distance(from: itemLocation)
+                return distance <= maxDistance
+            }
+        } catch {
+            return []
+        }
+    }
+    
+    private func removeDuplicates(from items: [MKMapItem]) -> [MKMapItem] {
+        var seen = Set<String>()
+        var uniqueItems: [MKMapItem] = []
+        
+        for item in items {
+            // Erstelle einen eindeutigen Identifier basierend auf Name und Koordinaten
+            let coordinate = item.placemark.coordinate
+            let identifier = "\(item.name ?? "unknown")_\(coordinate.latitude)_\(coordinate.longitude)"
+            
+            if !seen.contains(identifier) {
+                seen.insert(identifier)
+                uniqueItems.append(item)
+            }
+        }
+        
+        return uniqueItems
+    }
+    
+    // Helper-Methode um die Entfernung zu berechnen
+    func distance(to mapItem: MKMapItem) -> CLLocationDistance? {
+        guard let userLocation = userLocation,
+              let itemLocation = mapItem.placemark.location else {
+            return nil
+        }
+        return userLocation.distance(from: itemLocation)
+    }
+    
+    // Helper-Methode um die Entfernung formatiert anzuzeigen
+    func formattedDistance(to mapItem: MKMapItem) -> String {
+        guard let distance = distance(to: mapItem) else {
+            return ""
+        }
+        
+        if distance < 1000 {
+            return String(format: "%.0f m", distance)
+        } else {
+            return String(format: "%.1f km", distance / 1000)
+        }
+    }
+}
+
+extension RestaurantSearchViewModel: CLLocationManagerDelegate {
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        authorizationStatus = manager.authorizationStatus
+        if authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways {
+            startSearchNearbyRestaurants()
+        }
+    }
+
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        if let coordinate = locations.last?.coordinate {
+            manager.stopUpdatingLocation()
+            searchRestaurants(near: coordinate)
+        }
+    }
+
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        errorMessage = error.localizedDescription
+    }
+}
