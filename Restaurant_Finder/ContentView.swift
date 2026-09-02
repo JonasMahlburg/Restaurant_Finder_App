@@ -96,30 +96,6 @@ struct ContentView: View {
 }
 
 #Preview {
-    // Sample MKMapItems for preview
-    let viewModel = RestaurantSearchViewModel()
-    
-    let item1: MKMapItem = {
-        let placemark = MKPlacemark(coordinate: CLLocationCoordinate2D(latitude: 52.5200, longitude: 13.4050), addressDictionary: nil)
-        let mapItem = MKMapItem(placemark: placemark)
-        mapItem.name = "Restaurant Alpha"
-        return mapItem
-    }()
-
-    let item2: MKMapItem = {
-        let placemark = MKPlacemark(coordinate: CLLocationCoordinate2D(latitude: 52.5176, longitude: 13.4094), addressDictionary: nil)
-        let mapItem = MKMapItem(placemark: placemark)
-        mapItem.name = "Bistro Bravo"
-        return mapItem
-    }()
-
-    let item3: MKMapItem = {
-        let placemark = MKPlacemark(coordinate: CLLocationCoordinate2D(latitude: 52.5150, longitude: 13.3777), addressDictionary: nil)
-        let mapItem = MKMapItem(placemark: placemark)
-        mapItem.name = "Café Charlie"
-        return mapItem
-    }()
-
-    viewModel.restaurants = [item1, item2, item3]
-    return ContentView(viewModel: viewModel)
+    @Previewable @State var viewModel = RestaurantSearchViewModel()
+    ContentView(viewModel: viewModel)
 }

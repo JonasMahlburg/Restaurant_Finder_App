@@ -51,7 +51,7 @@ struct MapView: View {
         let request = MKLocalSearch.Request()
         request.naturalLanguageQuery = "restaurant"
         let downtown = MKCoordinateRegion(
-            center: city.placemark.coordinate,
+            center: city.location.coordinate,
             span: .init(latitudeDelta: 0.01, longitudeDelta: 0.01
                        )
     )

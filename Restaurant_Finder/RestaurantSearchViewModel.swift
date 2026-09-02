@@ -2,7 +2,7 @@ import Foundation
 import MapKit
 import CoreLocation
 import SwiftUI
-internal import Combine
+import Combine
 
 @MainActor
 final class RestaurantSearchViewModel: NSObject, ObservableObject {
@@ -15,6 +15,7 @@ final class RestaurantSearchViewModel: NSObject, ObservableObject {
 
     private let locationManager = CLLocationManager()
     private var allRestaurants: [MKMapItem] = []
+    private var searchCancellable: AnyCancellable?
     
     // Alle gastronomischen Kategorien
     private let foodCategories = [
@@ -37,12 +38,12 @@ final class RestaurantSearchViewModel: NSObject, ObservableObject {
     }
     
     private func setupSearchTextObserver() {
-        // Reagiere auf Änderungen im Suchtext
-        Task { @MainActor in
-            for await searchText in $searchText.values {
-                filterRestaurants(with: searchText)
+        // Reagiere auf Änderungen im Suchtext mit Combine
+        searchCancellable = $searchText
+            .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
+            .sink { [weak self] searchText in
+                self?.filterRestaurants(with: searchText)
             }
-        }
     }
     
     private func filterRestaurants(with searchText: String) {
@@ -90,7 +91,7 @@ final class RestaurantSearchViewModel: NSObject, ObservableObject {
         let maxDistance: CLLocationDistance = 10_000 // 10km in Metern
         
         // Suche nach allen gastronomischen Kategorien
-        Task {
+        Task { @MainActor in
             var allResults: [MKMapItem] = []
             
             // Führe Suchen für alle Kategorien parallel aus
@@ -116,7 +117,7 @@ final class RestaurantSearchViewModel: NSObject, ObservableObject {
         }
     }
     
-    private func searchCategory(_ category: String, near coordinate: CLLocationCoordinate2D, userLocation: CLLocation, maxDistance: CLLocationDistance) async -> [MKMapItem] {
+    nonisolated private func searchCategory(_ category: String, near coordinate: CLLocationCoordinate2D, userLocation: CLLocation, maxDistance: CLLocationDistance) async -> [MKMapItem] {
         let request = MKLocalSearch.Request()
         request.naturalLanguageQuery = category
         request.resultTypes = .pointOfInterest
@@ -131,9 +132,7 @@ final class RestaurantSearchViewModel: NSObject, ObservableObject {
             let response = try await search.start()
             // Filtere nach Entfernung
             return response.mapItems.filter { mapItem in
-                guard let itemLocation = mapItem.placemark.location else {
-                    return false
-                }
+                let itemLocation = mapItem.location
                 let distance = userLocation.distance(from: itemLocation)
                 return distance <= maxDistance
             }
@@ -142,13 +141,14 @@ final class RestaurantSearchViewModel: NSObject, ObservableObject {
         }
     }
     
-    private func removeDuplicates(from items: [MKMapItem]) -> [MKMapItem] {
+    nonisolated private func removeDuplicates(from items: [MKMapItem]) -> [MKMapItem] {
         var seen = Set<String>()
         var uniqueItems: [MKMapItem] = []
         
         for item in items {
             // Erstelle einen eindeutigen Identifier basierend auf Name und Koordinaten
-            let coordinate = item.placemark.coordinate
+            let location = item.location
+            let coordinate = location.coordinate
             let identifier = "\(item.name ?? "unknown")_\(coordinate.latitude)_\(coordinate.longitude)"
             
             if !seen.contains(identifier) {
@@ -162,10 +162,10 @@ final class RestaurantSearchViewModel: NSObject, ObservableObject {
     
     // Helper-Methode um die Entfernung zu berechnen
     func distance(to mapItem: MKMapItem) -> CLLocationDistance? {
-        guard let userLocation = userLocation,
-              let itemLocation = mapItem.placemark.location else {
+        guard let userLocation = userLocation else {
             return nil
         }
+        let itemLocation = mapItem.location
         return userLocation.distance(from: itemLocation)
     }
     
@@ -184,21 +184,28 @@ final class RestaurantSearchViewModel: NSObject, ObservableObject {
 }
 
 extension RestaurantSearchViewModel: CLLocationManagerDelegate {
-    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        authorizationStatus = manager.authorizationStatus
-        if authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways {
-            startSearchNearbyRestaurants()
+    nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        let status = manager.authorizationStatus
+        Task { @MainActor in
+            self.authorizationStatus = status
+            if status == .authorizedWhenInUse || status == .authorizedAlways {
+                self.startSearchNearbyRestaurants()
+            }
         }
     }
 
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+    nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         if let coordinate = locations.last?.coordinate {
             manager.stopUpdatingLocation()
-            searchRestaurants(near: coordinate)
+            Task { @MainActor in
+                self.searchRestaurants(near: coordinate)
+            }
         }
     }
 
-    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        errorMessage = error.localizedDescription
+    nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        Task { @MainActor in
+            self.errorMessage = error.localizedDescription
+        }
     }
 }

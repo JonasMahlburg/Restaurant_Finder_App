@@ -26,27 +26,6 @@ struct VisitedRestaurantView: View {
 }
 
 #Preview {
-    // Sample MKMapItems for preview
-    let item1: MKMapItem = {
-        let placemark = MKPlacemark(coordinate: CLLocationCoordinate2D(latitude: 52.5200, longitude: 13.4050), addressDictionary: nil)
-        let mapItem = MKMapItem(placemark: placemark)
-        mapItem.name = "Restaurant Alpha"
-        return mapItem
-    }()
-
-    let item2: MKMapItem = {
-        let placemark = MKPlacemark(coordinate: CLLocationCoordinate2D(latitude: 52.5176, longitude: 13.4094), addressDictionary: nil)
-        let mapItem = MKMapItem(placemark: placemark)
-        mapItem.name = "Bistro Bravo"
-        return mapItem
-    }()
-
-    let item3: MKMapItem = {
-        let placemark = MKPlacemark(coordinate: CLLocationCoordinate2D(latitude: 52.5150, longitude: 13.3777), addressDictionary: nil)
-        let mapItem = MKMapItem(placemark: placemark)
-        mapItem.name = "Café Charlie"
-        return mapItem
-    }()
-
-    return VisitedRestaurantView(visitedRestaurants: [item1, item2, item3])
+    // Preview zeigt leere Karte - in der echten App werden besuchte Restaurants angezeigt
+    VisitedRestaurantView(visitedRestaurants: [])
 }
