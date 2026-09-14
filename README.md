@@ -4,7 +4,7 @@ Eine iOS-App zum Finden von Restaurants, Cafés, Bars und anderen gastronomische
 
 ## Features ✨
 
-- 📍 Findet Restaurants im Umkreis von 10km
+- 📍 Findet Restaurants im Umkreis von 20km
 - 🔍 Durchsuchbare Liste aller Einrichtungen
 - 🏪 Verschiedene Kategorien: Restaurants, Cafés, Bars, Pubs, Bistros, etc.
 - 📏 Zeigt Entfernung zu jedem Restaurant an
@@ -89,7 +89,7 @@ Beiträge sind willkommen! Bitte:
 
 ## Kontakt 📧
 
-Jonas Mahlburg - [Dein GitHub/E-Mail]
+Jonas Mahlburg - mail@jonas-mahlburg.de
 
 ## Danksagungen 🙏
 

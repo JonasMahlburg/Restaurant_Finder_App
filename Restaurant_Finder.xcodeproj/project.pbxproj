@@ -7,10 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		DD5FDCE93057E26500EC3501 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = DD5FDCE13057E26500EC3501 /* README.md */; };
 		DD6CDE143046FE4700D4706B /* WishKit in Frameworks */ = {isa = PBXBuildFile; productRef = DD6CDE133046FE4700D4706B /* WishKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		DD5FDCE13057E26500EC3501 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		DDC8C8C52EC3331900A4D80A /* Restaurant_Finder.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Restaurant_Finder.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -52,6 +54,7 @@
 			children = (
 				DDC8C8C72EC3331900A4D80A /* Restaurant_Finder */,
 				DDC8C8C62EC3331900A4D80A /* Products */,
+				DD5FDCE13057E26500EC3501 /* README.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -131,6 +134,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DD5FDCE93057E26500EC3501 /* README.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -2,6 +2,9 @@
 #
 # gitignore contributors: remember to update Global/Xcode.gitignore, Objective-C.gitignore & Swift.gitignore
 
+## API Keys - WICHTIG: Niemals committen!
+APIKeys.swift
+
 ## User settings
 xcuserdata/
 
@@ -89,7 +92,5 @@ fastlane/test_output
 
 iOSInjectionProject/
 
-# API Keys and Secrets
-Config.xcconfig
-Secrets.plist
-APIKeys.swift
+# macOS
+.DS_Store

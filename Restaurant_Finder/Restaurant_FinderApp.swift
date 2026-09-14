@@ -24,8 +24,8 @@ struct Restaurant_FinderApp: App {
         let apiKey: String?
         
         #if DEBUG
-        // Lokale Entwicklung
-        apiKey = "E6FA8A14-E48F-4DE0-A325-797FDA500D01"
+        // Lokale Entwicklung: Lade von APIKeys.swift (nicht in Git)
+        apiKey = APIKeys.wishKit
         #else
         // Production/Xcode Cloud: Umgebungsvariable
         apiKey = ProcessInfo.processInfo.environment["WISHKIT_API_KEY"]
