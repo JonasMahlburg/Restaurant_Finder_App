@@ -17,18 +17,15 @@ final class RestaurantSearchViewModel: NSObject, ObservableObject {
     private var allRestaurants: [MKMapItem] = []
     private var searchCancellable: AnyCancellable?
     
-    // Alle gastronomischen Kategorien
-    private let foodCategories = [
-        "Restaurant",
-        "Bar",
-        "Pub",
-        "Café",
-        "Bistro",
-        "Pizzeria",
-        "Sushi",
-        "Burger",
-        "Fast Food",
-        "Imbiss"
+    // Alle gastronomischen Point of Interest Kategorien
+    private let foodPOICategories: [MKPointOfInterestCategory] = [
+        .restaurant,
+        .cafe,
+        .bakery,
+        .brewery,
+        .winery,
+        .nightlife,
+//        .foodMarket //nicht relevant
     ]
 
     override init() {
@@ -90,15 +87,15 @@ final class RestaurantSearchViewModel: NSObject, ObservableObject {
         self.userLocation = userLocation
         let maxDistance: CLLocationDistance = 10_000 // 10km in Metern
         
-        // Suche nach allen gastronomischen Kategorien
+        // Suche nach allen gastronomischen Point of Interest Kategorien
         Task { @MainActor in
             var allResults: [MKMapItem] = []
             
-            // Führe Suchen für alle Kategorien parallel aus
+            // Führe Suchen für alle POI-Kategorien parallel aus
             await withTaskGroup(of: [MKMapItem].self) { group in
-                for category in foodCategories {
+                for category in foodPOICategories {
                     group.addTask {
-                        await self.searchCategory(category, near: coordinate, userLocation: userLocation, maxDistance: maxDistance)
+                        await self.searchPOICategory(category, near: coordinate, userLocation: userLocation, maxDistance: maxDistance)
                     }
                 }
                 
@@ -117,13 +114,13 @@ final class RestaurantSearchViewModel: NSObject, ObservableObject {
         }
     }
     
-    nonisolated private func searchCategory(_ category: String, near coordinate: CLLocationCoordinate2D, userLocation: CLLocation, maxDistance: CLLocationDistance) async -> [MKMapItem] {
+    nonisolated private func searchPOICategory(_ category: MKPointOfInterestCategory, near coordinate: CLLocationCoordinate2D, userLocation: CLLocation, maxDistance: CLLocationDistance) async -> [MKMapItem] {
         let request = MKLocalSearch.Request()
-        request.naturalLanguageQuery = category
+        request.pointOfInterestFilter = MKPointOfInterestFilter(including: [category])
         request.resultTypes = .pointOfInterest
         request.region = MKCoordinateRegion(
             center: coordinate,
-            span: MKCoordinateSpan(latitudeDelta: 0.15, longitudeDelta: 0.15)
+            span: MKCoordinateSpan(latitudeDelta: 0.2, longitudeDelta: 0.2)
         )
         
         let search = MKLocalSearch(request: request)
