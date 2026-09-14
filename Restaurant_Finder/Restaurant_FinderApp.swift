@@ -13,6 +13,7 @@ import WishKit
 @main
 struct Restaurant_FinderApp: App {
     @StateObject private var viewModel = RestaurantSearchViewModel()
+    @StateObject private var favoritesManager = FavoritesManager()
     
     init() {
         // Konfiguriere WishKit nur wenn API-Key verfügbar ist
@@ -51,7 +52,7 @@ struct Restaurant_FinderApp: App {
                         .foregroundStyle(.red)
                         .padding(.bottom, 8)
                 }
-                ContentView(viewModel: viewModel)
+                ContentView(viewModel: viewModel, favoritesManager: favoritesManager)
                     .onAppear {
                         viewModel.startSearchNearbyRestaurants()
                     }

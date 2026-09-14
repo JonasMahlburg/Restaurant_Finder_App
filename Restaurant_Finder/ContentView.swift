@@ -10,8 +10,10 @@ import SwiftUI
 
 struct ContentView: View {
     @ObservedObject var viewModel: RestaurantSearchViewModel
+    @ObservedObject var favoritesManager: FavoritesManager
     @State private var selectedRestaurant: MKMapItem?
     @State private var showingFeedback = false
+    @State private var showingFavorites = false
     
     
     var body: some View {
@@ -21,33 +23,55 @@ struct ContentView: View {
                 id: \.self,
                 selection: $selectedRestaurant
             ) { restaurant in
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(restaurant.name ?? "Restaurant")
-                        .font(.headline)
-                    
-                    HStack {
-                        // Küchen-Art / Kategorie
-                        if let category = restaurant.pointOfInterestCategory {
-                            Text(categoryName(for: category))
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        }
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(restaurant.name ?? "Restaurant")
+                            .font(.headline)
                         
-                        // Entfernung
-                        if !viewModel.formattedDistance(to: restaurant).isEmpty {
-                            Text("•")
-                                .foregroundStyle(.secondary)
-                            Text(viewModel.formattedDistance(to: restaurant))
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
+                        HStack {
+                            // Küchen-Art / Kategorie
+                            if let category = restaurant.pointOfInterestCategory {
+                                Text(categoryName(for: category))
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
+                            
+                            // Entfernung
+                            if !viewModel.formattedDistance(to: restaurant).isEmpty {
+                                Text("•")
+                                    .foregroundStyle(.secondary)
+                                Text(viewModel.formattedDistance(to: restaurant))
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
+                    
+                    Spacer()
+                    
+                    // Favoriten-Button
+                    Button {
+                        favoritesManager.toggleFavorite(restaurant)
+                    } label: {
+                        Image(systemName: favoritesManager.isFavorite(restaurant) ? "star.fill" : "star")
+                            .foregroundStyle(favoritesManager.isFavorite(restaurant) ? .yellow : .gray)
+                            .font(.title3)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
             .mapItemDetailSheet(item: $selectedRestaurant)
             .searchable(text: $viewModel.searchText, prompt: "Restaurant suchen")
             .navigationTitle("In deiner Nähe")
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        showingFavorites = true
+                    } label: {
+                        Label("Favoriten", systemImage: "star.fill")
+                    }
+                }
+                
                 ToolbarItem(placement: .primaryAction) {
                     Button {
                         showingFeedback = true
@@ -63,6 +87,18 @@ struct ContentView: View {
                             ToolbarItem(placement: .cancellationAction) {
                                 Button("Fertig") {
                                     showingFeedback = false
+                                }
+                            }
+                        }
+                }
+            }
+            .sheet(isPresented: $showingFavorites) {
+                NavigationStack {
+                    FavoritesView(favoritesManager: favoritesManager)
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("Fertig") {
+                                    showingFavorites = false
                                 }
                             }
                         }
@@ -97,5 +133,6 @@ struct ContentView: View {
 
 #Preview {
     @Previewable @State var viewModel = RestaurantSearchViewModel()
-    ContentView(viewModel: viewModel)
+    @Previewable @State var favoritesManager = FavoritesManager()
+    ContentView(viewModel: viewModel, favoritesManager: favoritesManager)
 }
