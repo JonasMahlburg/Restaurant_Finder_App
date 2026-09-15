@@ -16,19 +16,15 @@ struct Restaurant_FinderApp: App {
     @StateObject private var favoritesManager = FavoritesManager()
     
     init() {
-        // Konfiguriere WishKit nur wenn API-Key verfügbar ist
         configureWishKit()
     }
     
     private func configureWishKit() {
-        // Versuche API-Key aus verschiedenen Quellen zu laden
         let apiKey: String?
         
         #if DEBUG
-        // Lokale Entwicklung: Lade von APIKeys.swift (nicht in Git)
         apiKey = APIKeys.wishKit
         #else
-        // Production/Xcode Cloud: Umgebungsvariable
         apiKey = ProcessInfo.processInfo.environment["WISHKIT_API_KEY"]
         #endif
         
@@ -58,6 +54,5 @@ struct Restaurant_FinderApp: App {
                     }
             }
         }
-//        .modelContainer(for: Restaurant.self)
     }
 }

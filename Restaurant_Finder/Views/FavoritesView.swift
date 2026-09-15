@@ -92,8 +92,6 @@ struct FavoritesView: View {
             return "Weingut"
         case .nightlife:
             return "Bar/Club"
-        case .foodMarket:
-            return "Lebensmittelmarkt"
         default:
             return "Gastronomie"
         }
