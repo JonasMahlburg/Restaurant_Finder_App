@@ -7,9 +7,11 @@
 
 import Foundation
 import MapKit
+import CoreLocation
 import SwiftUI
 import Combine
 
+@MainActor
 class FavoritesManager: ObservableObject {
     @Published private(set) var favorites: [FavoriteRestaurant] = []
     
@@ -44,18 +46,48 @@ class FavoritesManager: ObservableObject {
     private func addFavorite(_ mapItem: MKMapItem) {
         guard let name = mapItem.name else { return }
         let coordinate = mapItem.location.coordinate
-        
+        let id = UUID()
+
         let favorite = FavoriteRestaurant(
-            id: UUID(),
+            id: id,
             name: name,
             latitude: coordinate.latitude,
             longitude: coordinate.longitude,
             category: mapItem.pointOfInterestCategory?.rawValue,
-            dateAdded: Date()
+            dateAdded: Date(),
+            place: place(for: mapItem),
+            identifierRawValue: mapItem.identifier?.rawValue
         )
-        
+
         favorites.append(favorite)
         saveFavorites()
+
+        // Viele POI-Suchergebnisse liefern keine addressRepresentations mit,
+        // daher zusätzlich per Reverse-Geocoding auflösen, falls nötig
+        if favorite.place == nil {
+            resolvePlace(for: id, coordinate: coordinate)
+        }
+    }
+
+    // Ermittelt den Ort (Stadt) eines Restaurants aus den Adressdaten
+    private func place(for mapItem: MKMapItem) -> String? {
+        let address = mapItem.addressRepresentations
+        return address?.cityName ?? address?.regionName
+    }
+
+    // Löst den Ort nachträglich per Reverse-Geocoding auf und aktualisiert den Favoriten
+    private func resolvePlace(for id: UUID, coordinate: CLLocationCoordinate2D) {
+        Task {
+            let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+            guard let request = MKReverseGeocodingRequest(location: location) else { return }
+
+            guard let resolvedItem = try? await request.mapItems.first,
+                  let place = self.place(for: resolvedItem),
+                  let index = favorites.firstIndex(where: { $0.id == id }) else { return }
+
+            favorites[index].place = place
+            saveFavorites()
+        }
     }
     
     // Favorit entfernen
@@ -97,6 +129,11 @@ class FavoritesManager: ObservableObject {
             // Noch keine Favoriten gespeichert oder Fehler beim Laden
             favorites = []
         }
+
+        // Ort für bereits gespeicherte Favoriten ohne addressRepresentations nachträglich auflösen
+        for favorite in favorites where favorite.place == nil {
+            resolvePlace(for: favorite.id, coordinate: CLLocationCoordinate2D(latitude: favorite.latitude, longitude: favorite.longitude))
+        }
     }
 }
 
@@ -108,4 +145,29 @@ struct FavoriteRestaurant: Codable, Identifiable {
     let longitude: Double
     let category: String?
     let dateAdded: Date
+    var place: String?
+    let identifierRawValue: String?
+
+    // Baut ein einfaches MKMapItem aus den gespeicherten Daten (für die Listenanzeige)
+    var mapItem: MKMapItem {
+        let location = CLLocation(latitude: latitude, longitude: longitude)
+        let item = MKMapItem(location: location, address: nil)
+        item.name = name
+        if let category {
+            item.pointOfInterestCategory = MKPointOfInterestCategory(rawValue: category)
+        }
+        return item
+    }
+
+    // Lädt das vollständige MKMapItem nach (mit Öffnungszeiten, Telefon, Adresse etc.),
+    // damit die DetailView identisch zur Suche ist
+    func resolvedMapItem() async -> MKMapItem {
+        guard let identifierRawValue,
+              let identifier = MKMapItem.Identifier(rawValue: identifierRawValue) else {
+            return mapItem
+        }
+
+        let request = MKMapItemRequest(mapItemIdentifier: identifier)
+        return (try? await request.mapItem) ?? mapItem
+    }
 }
