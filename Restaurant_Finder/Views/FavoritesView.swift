@@ -10,8 +10,9 @@ import MapKit
 
 struct FavoritesView: View {
     @ObservedObject var favoritesManager: FavoritesManager
-    @State private var selectedFavorite: FavoriteRestaurant?
-    
+    @State private var selectedFavoriteID: FavoriteRestaurant.ID?
+    @State private var detailItem: MKMapItem?
+
     var body: some View {
         Group {
             if favoritesManager.favorites.isEmpty {
@@ -21,62 +22,53 @@ struct FavoritesView: View {
                     Text("Markiere Restaurants als Favoriten, indem du auf den Stern tippst.")
                 }
             } else {
-                List {
-                    ForEach(favoritesManager.favorites.sorted(by: { $0.dateAdded > $1.dateAdded })) { favorite in
-                        Button {
-                            selectedFavorite = favorite
+                let sortedFavorites = favoritesManager.favorites.sorted(by: { $0.dateAdded > $1.dateAdded })
+
+                List(sortedFavorites, id: \.id, selection: $selectedFavoriteID) { favorite in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(favorite.name)
+                            .font(.headline)
+
+                        if let categoryRaw = favorite.category {
+                            let category = MKPointOfInterestCategory(rawValue: categoryRaw)
+                            Text(categoryName(for: category))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Text(favorite.place ?? "Unbekannter Ort")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .swipeActions {
+                        Button(role: .destructive) {
+                            favoritesManager.removeFavorite(id: favorite.id)
                         } label: {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(favorite.name)
-                                        .font(.headline)
-                                        .foregroundStyle(.primary)
-                                    
-                                    if let categoryRaw = favorite.category {
-                                        let category = MKPointOfInterestCategory(rawValue: categoryRaw)
-                                        Text(categoryName(for: category))
-                                            .font(.subheadline)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    
-                                    Text("Hinzugefügt: \(favorite.dateAdded.formatted(date: .abbreviated, time: .omitted))")
-                                        .font(.caption)
-                                        .foregroundStyle(.tertiary)
-                                }
-                                
-                                Spacer()
-                                
-                                Image(systemName: "chevron.right")
-                                    .font(.caption)
-                                    .foregroundStyle(.tertiary)
-                            }
+                            Label("Entfernen", systemImage: "trash")
                         }
                     }
-                    .onDelete { indexSet in
-                        let sortedFavorites = favoritesManager.favorites.sorted(by: { $0.dateAdded > $1.dateAdded })
-                        for index in indexSet {
-                            favoritesManager.removeFavorite(id: sortedFavorites[index].id)
-                        }
-                    }
+                }
+                .onChange(of: selectedFavoriteID) { _, newID in
+                    guard let newID, let favorite = sortedFavorites.first(where: { $0.id == newID }) else { return }
+                    selectedFavoriteID = nil
+                    presentDetail(for: favorite)
                 }
             }
         }
         .navigationTitle("Favoriten")
         .navigationBarTitleDisplayMode(.large)
-        .sheet(item: $selectedFavorite) { favorite in
-            NavigationStack {
-                FavoriteDetailView(favorite: favorite)
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Fertig") {
-                                selectedFavorite = nil
-                            }
-                        }
-                    }
-            }
+        .mapItemDetailSheet(item: $detailItem)
+    }
+
+    // Löst zunächst das vollständige MKMapItem auf und präsentiert die Sheet erst danach -
+    // die Sheet übernimmt später gesetzte Werte nicht, wenn item bei der Präsentation
+    // bereits belegt (oder nil) war
+    private func presentDetail(for favorite: FavoriteRestaurant) {
+        Task {
+            detailItem = await favorite.resolvedMapItem()
         }
     }
-    
+
     // Übersetzt die POI-Kategorie in lesbare Namen
     private func categoryName(for category: MKPointOfInterestCategory) -> String {
         switch category {
@@ -92,83 +84,6 @@ struct FavoritesView: View {
             return "Weingut"
         case .nightlife:
             return "Bar/Club"
-        default:
-            return "Gastronomie"
-        }
-    }
-}
-
-// Detail-Ansicht für ein Favoriten-Restaurant
-struct FavoriteDetailView: View {
-    let favorite: FavoriteRestaurant
-    
-    var body: some View {
-        Map {
-            Marker(favorite.name, coordinate: CLLocationCoordinate2D(
-                latitude: favorite.latitude,
-                longitude: favorite.longitude
-            ))
-        }
-        .navigationTitle(favorite.name)
-        .navigationBarTitleDisplayMode(.inline)
-        .safeAreaInset(edge: .bottom) {
-            VStack(spacing: 12) {
-                if let categoryRaw = favorite.category {
-                    let category = MKPointOfInterestCategory(rawValue: categoryRaw)
-                    HStack {
-                        Image(systemName: "fork.knife")
-                        Text(categoryName(for: category))
-                        Spacer()
-                    }
-                    .font(.subheadline)
-                }
-                
-                Button {
-                    openInMaps()
-                } label: {
-                    Label("In Karten öffnen", systemImage: "map")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-            }
-            .padding()
-            .background(.regularMaterial)
-        }
-    }
-    
-    private func openInMaps() {
-        let coordinate = CLLocationCoordinate2D(
-            latitude: favorite.latitude,
-            longitude: favorite.longitude
-        )
-        
-        // Erstelle MKMapItem für iOS 26
-        let mapItem = MKMapItem()
-        mapItem.name = favorite.name
-        
-        // Öffne in Maps
-        mapItem.openInMaps(launchOptions: [
-            MKLaunchOptionsMapCenterKey: NSValue(mkCoordinate: coordinate),
-            MKLaunchOptionsMapSpanKey: NSValue(mkCoordinateSpan: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01))
-        ])
-    }
-    
-    private func categoryName(for category: MKPointOfInterestCategory) -> String {
-        switch category {
-        case .restaurant:
-            return "Restaurant"
-        case .cafe:
-            return "Café"
-        case .bakery:
-            return "Bäckerei"
-        case .brewery:
-            return "Brauerei"
-        case .winery:
-            return "Weingut"
-        case .nightlife:
-            return "Bar/Club"
-        case .foodMarket:
-            return "Lebensmittelmarkt"
         default:
             return "Gastronomie"
         }
